@@ -4,10 +4,12 @@ pub mod auth;
 pub mod compose;
 pub mod folders;
 pub mod health;
+pub mod labels;
 pub mod messages;
 pub mod search;
 pub mod sync;
 pub mod threads;
+pub mod translate;
 
 use crate::state::AppStateRef;
 use crate::ws;
@@ -49,6 +51,14 @@ pub fn build_router(state: AppStateRef, static_dir: &str) -> Router {
         .route("/api/v1/attachments/{attachment_id}/download", get(attachments::download_attachment))
         // Compose
         .route("/api/v1/compose", post(compose::send_email))
+        // Translate
+        .route("/api/v1/translate", post(translate::translate))
+        // Labels
+        .route("/api/v1/labels", get(labels::list_labels))
+        .route("/api/v1/labels", post(labels::create_label))
+        .route("/api/v1/labels/{id}", delete(labels::delete_label))
+        .route("/api/v1/messages/{id}/labels", post(labels::add_label_to_message))
+        .route("/api/v1/messages/{id}/labels/{label_id}", delete(labels::remove_label_from_message))
         // Sync
         .route("/api/v1/sync/trigger", post(sync::trigger_sync))
         .layer(middleware::from_fn(move |req, next| {

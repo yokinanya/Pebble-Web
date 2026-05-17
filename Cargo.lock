@@ -1769,6 +1769,7 @@ dependencies = [
  "pebble-mail",
  "pebble-search",
  "pebble-store",
+ "pebble-translate",
  "rusqlite",
  "serde",
  "serde_json",
