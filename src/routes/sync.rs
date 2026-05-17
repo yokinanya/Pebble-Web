@@ -4,6 +4,7 @@ use axum::{extract::State, Json};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TriggerSyncRequest {
     pub account_id: String,
 }

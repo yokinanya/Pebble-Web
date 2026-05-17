@@ -157,6 +157,16 @@ impl SyncManager {
         Ok(())
     }
 
+    /// Stop sync for a single account.
+    pub async fn stop_account_sync(&self, account_id: &str) {
+        let mut handles = self.handles.lock().await;
+        if let Some(handle) = handles.remove(account_id) {
+            info!("Stopping sync for account {}", account_id);
+            let _ = handle.stop_tx.send(true);
+            handle.task.abort();
+        }
+    }
+
     /// Trigger a manual sync for a specific account.
     pub async fn trigger_sync(&self, account_id: &str) -> Result<(), String> {
         let handles = self.handles.lock().await;

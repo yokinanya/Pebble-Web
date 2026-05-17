@@ -128,3 +128,35 @@ pub async fn list_folders(
 
     Ok(Json(response))
 }
+
+pub async fn get_folder_unread_counts(
+    State(state): State<AppStateRef>,
+    Path(account_id): Path<String>,
+) -> Result<Json<HashMap<String, u32>>, ApiError> {
+    let store = state.store.clone();
+
+    let counts = store
+        .with_read_async(move |conn| {
+            let mut stmt = conn.prepare(
+                "SELECT f.id, COUNT(CASE WHEN m.is_read = 0 THEN 1 END) as unread
+                 FROM folders f
+                 LEFT JOIN message_folders mf ON f.id = mf.folder_id
+                 LEFT JOIN messages m ON mf.message_id = m.id AND m.is_deleted = 0
+                 WHERE f.account_id = ?1
+                 GROUP BY f.id",
+            )?;
+            let rows = stmt.query_map(rusqlite::params![account_id], |row| {
+                Ok((row.get::<_, String>(0)?, row.get::<_, u32>(1)?))
+            })?;
+            let mut counts = HashMap::new();
+            for row in rows {
+                let (fid, count) = row?;
+                counts.insert(fid, count);
+            }
+            Ok(counts)
+        })
+        .await
+        .map_err(|e| ApiError::Internal(format!("Failed to get folder unread counts: {e}")))?;
+
+    Ok(Json(counts))
+}

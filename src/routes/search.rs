@@ -5,6 +5,7 @@ use pebble_core::traits::SearchHit;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SearchRequest {
     pub query: Option<String>,
     pub from: Option<String>,
