@@ -11,7 +11,7 @@ function normalizeSavedLanguage(value: string | null): Language | null {
 
 export function detectSystemLanguage(source: NavigatorLanguageSource = navigator): Language {
   const primaryLanguage = source.languages?.[0] || source.language || "";
-  return primaryLanguage.toLowerCase().startsWith("zh") ? "zh" : "en";
+  return primaryLanguage.toLowerCase().startsWith("en") ? "en" : "zh";
 }
 
 export function getInitialLanguage(

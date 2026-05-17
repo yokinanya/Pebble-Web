@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { File, FileText, Image, FileArchive, Film, Music, Download, Loader, Check } from "lucide-react";
-import { listAttachments } from "@/lib/api";
+import { downloadAttachment, listAttachments } from "@/lib/api";
 import type { Attachment } from "@/lib/api";
 import { useToastStore } from "@/stores/toast.store";
 
@@ -65,12 +65,7 @@ export default function AttachmentList({ messageId }: Props) {
   async function handleDownload(attachment: Attachment) {
     setDownloadingId(attachment.id);
     try {
-      // In web mode, download via browser by opening attachment URL
-      const url = `/api/attachments/${attachment.id}/download`;
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = attachment.filename;
-      a.click();
+      await downloadAttachment(attachment.id, attachment.filename);
       setDownloadedIds((prev) => new Set(prev).add(attachment.id));
     } catch (err) {
       console.error("Failed to download attachment:", err);

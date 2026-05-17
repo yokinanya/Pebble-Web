@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { useUIStore, type SettingsTab } from "@/stores/ui.store";
 import AccountsTab from "./AccountsTab";
 import GeneralTab from "./GeneralTab";
-import ProxyTab from "./ProxyTab";
 import AppearanceTab from "./AppearanceTab";
 import CloudSyncTab from "./CloudSyncTab";
 import RulesTab from "./RulesTab";
@@ -12,12 +11,12 @@ import TranslateTab from "./TranslateTab";
 import PrivacyTab from "./PrivacyTab";
 import AboutTab from "./AboutTab";
 
-const TAB_IDS = ["accounts", "general", "proxy", "appearance", "privacy", "rules", "remoteWrites", "translation", "shortcuts", "cloudSync", "about"] as const;
+const TAB_IDS = ["accounts", "general", "appearance", "privacy", "rules", "remoteWrites", "translation", "shortcuts", "cloudSync", "about"] as const;
+type VisibleSettingsTab = (typeof TAB_IDS)[number];
 
 const TAB_LABEL_KEYS: Record<string, string> = {
   accounts: "settings.accounts",
   general: "settings.general",
-  proxy: "settings.proxy",
   appearance: "settings.appearance",
   privacy: "settings.privacy",
   rules: "settings.rules",
@@ -30,7 +29,10 @@ const TAB_LABEL_KEYS: Record<string, string> = {
 
 export default function SettingsView() {
   const { t } = useTranslation();
-  const activeTab = useUIStore((s) => s.settingsTab);
+  const storedTab = useUIStore((s) => s.settingsTab);
+  const activeTab: VisibleSettingsTab = (TAB_IDS as readonly string[]).includes(storedTab)
+    ? (storedTab as VisibleSettingsTab)
+    : "general";
   const setSettingsTab = useUIStore((s) => s.setSettingsTab);
 
   function handleTabChange(id: SettingsTab) {
@@ -108,7 +110,6 @@ export default function SettingsView() {
       >
         {activeTab === "accounts" && <AccountsTab />}
         {activeTab === "general" && <GeneralTab />}
-        {activeTab === "proxy" && <ProxyTab />}
         {activeTab === "appearance" && <AppearanceTab />}
         {activeTab === "rules" && <RulesTab />}
         {activeTab === "remoteWrites" && <PendingOpsTab />}

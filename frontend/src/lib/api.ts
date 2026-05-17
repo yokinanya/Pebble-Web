@@ -337,20 +337,23 @@ export async function listPendingMailOps(
 
 // ─── Trusted Senders API ────────────────────────────────────────────────────
 
-export async function listTrustedSenders(_accountId: string): Promise<TrustedSender[]> {
-  return [];
+export async function listTrustedSenders(accountId: string): Promise<TrustedSender[]> {
+  const res = await api.get<TrustedSender[]>(`/accounts/${accountId}/trusted-senders`);
+  return res.data;
 }
 
-export async function removeTrustedSender(_accountId: string, _email: string): Promise<void> {
-  console.warn("[api] removeTrustedSender not implemented in web");
+export async function removeTrustedSender(accountId: string, email: string): Promise<void> {
+  await api.delete(`/accounts/${accountId}/trusted-senders/${encodeURIComponent(email)}`);
 }
 
-export async function trustSender(_accountId: string, _email: string, _trustType: "images" | "all"): Promise<void> {
-  console.warn("[api] trustSender not implemented in web");
+export async function trustSender(accountId: string, email: string, trustType: "images" | "all"): Promise<void> {
+  await api.post(`/accounts/${accountId}/trusted-senders`, { email, trustType });
 }
 
-export async function isTrustedSender(_accountId: string, _email: string): Promise<boolean> {
-  return false;
+export async function isTrustedSender(accountId: string, email: string): Promise<boolean> {
+  const normalized = email.trim().toLowerCase();
+  const senders = await listTrustedSenders(accountId);
+  return senders.some((sender) => sender.email.toLowerCase() === normalized);
 }
 
 // ─── Search API ──────────────────────────────────────────────────────────────
@@ -433,82 +436,100 @@ export async function getAttachmentPath(_attachmentId: string): Promise<string |
   return null;
 }
 
-export async function downloadAttachment(attachmentId: string, _saveTo: string): Promise<string> {
+export async function downloadAttachment(attachmentId: string, saveTo?: string): Promise<string> {
   const res = await api.get(`/attachments/${attachmentId}/download`, { responseType: "blob" });
   const blob = new Blob([res.data]);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = attachmentId;
+  a.download = saveTo || attachmentId;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
-  return attachmentId;
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  return saveTo || attachmentId;
 }
 
 // ─── Kanban API ──────────────────────────────────────────────────────────────
 
-export async function moveToKanban(_messageId: string, _column: KanbanColumnType, _position?: number): Promise<void> {
-  console.warn("[api] moveToKanban not implemented in web");
+export async function moveToKanban(messageId: string, column: KanbanColumnType, position?: number): Promise<void> {
+  await api.post(`/kanban/${messageId}`, { column, position });
 }
 
-export async function listKanbanCards(_column?: KanbanColumnType): Promise<KanbanCard[]> {
-  return [];
+export async function listKanbanCards(column?: KanbanColumnType): Promise<KanbanCard[]> {
+  const res = await api.get<KanbanCard[]>("/kanban", { params: { column } });
+  return res.data;
 }
 
-export async function removeFromKanban(_messageId: string): Promise<void> {
-  console.warn("[api] removeFromKanban not implemented in web");
+export async function removeFromKanban(messageId: string): Promise<void> {
+  await api.delete(`/kanban/${messageId}`);
 }
 
 export async function listKanbanContextNotes(): Promise<Record<string, string>> {
-  return {};
+  const res = await api.get<Record<string, string>>("/kanban/context-notes");
+  return res.data;
 }
 
 export async function setKanbanContextNote(
-  _messageId: string,
-  _note: string,
+  messageId: string,
+  note: string,
 ): Promise<Record<string, string>> {
-  console.warn("[api] setKanbanContextNote not implemented in web");
-  return {};
+  const res = await api.put<Record<string, string>>(`/kanban/context-notes/${messageId}`, { note });
+  return res.data;
 }
 
 export async function mergeKanbanContextNotes(
-  _notes: Record<string, string>,
+  notes: Record<string, string>,
 ): Promise<Record<string, string>> {
-  console.warn("[api] mergeKanbanContextNotes not implemented in web");
-  return {};
+  const res = await api.post<Record<string, string>>("/kanban/context-notes", { notes });
+  return res.data;
 }
 
 // ─── Snooze API ──────────────────────────────────────────────────────────────
 
-export async function snoozeMessage(_messageId: string, _until: number, _returnTo: string): Promise<void> {
-  console.warn("[api] snoozeMessage not implemented in web");
+export async function snoozeMessage(messageId: string, until: number, returnTo: string): Promise<void> {
+  await api.post(`/messages/${messageId}/snooze`, { until, returnTo });
 }
 
-export async function unsnoozeMessage(_messageId: string): Promise<void> {
-  console.warn("[api] unsnoozeMessage not implemented in web");
+export async function unsnoozeMessage(messageId: string): Promise<void> {
+  await api.delete(`/messages/${messageId}/snooze`);
 }
 
 export async function listSnoozed(): Promise<SnoozedMessage[]> {
-  return [];
+  const res = await api.get<SnoozedMessage[]>("/snoozed");
+  return res.data;
 }
 
 // ─── Rules API ───────────────────────────────────────────────────────────────
 
-export async function createRule(_name: string, _priority: number, _conditions: string, _actions: string): Promise<Rule> {
-  console.warn("[api] createRule not implemented in web");
-  return { id: "", name: _name, priority: _priority, conditions: _conditions, actions: _actions } as Rule;
+export async function createRule(name: string, priority: number, conditions: string, actions: string): Promise<Rule> {
+  const res = await api.post<Rule>("/rules", {
+    name,
+    priority,
+    conditions,
+    actions,
+    is_enabled: true,
+  });
+  return res.data;
 }
 
 export async function listRules(): Promise<Rule[]> {
-  return [];
+  const res = await api.get<Rule[]>("/rules");
+  return res.data;
 }
 
-export async function updateRule(_rule: Rule): Promise<void> {
-  console.warn("[api] updateRule not implemented in web");
+export async function updateRule(rule: Rule): Promise<void> {
+  await api.put(`/rules/${rule.id}`, {
+    name: rule.name,
+    priority: rule.priority,
+    conditions: rule.conditions,
+    actions: rule.actions,
+    is_enabled: rule.is_enabled,
+  });
 }
 
-export async function deleteRule(_ruleId: string): Promise<void> {
-  console.warn("[api] deleteRule not implemented in web");
+export async function deleteRule(ruleId: string): Promise<void> {
+  await api.delete(`/rules/${ruleId}`);
 }
 
 // ─── Compose API ─────────────────────────────────────────────────────────────
@@ -612,12 +633,14 @@ export async function listThreadMessages(threadId: string): Promise<Message[]> {
 
 // ─── Labels API ──────────────────────────────────────────────────────────────
 
-export async function getMessageLabels(_messageId: string): Promise<Label[]> {
-  return [];
+export async function getMessageLabels(messageId: string): Promise<Label[]> {
+  const res = await api.get<Label[]>(`/messages/${messageId}/labels`);
+  return res.data;
 }
 
-export async function getMessageLabelsBatch(_messageIds: string[]): Promise<Record<string, Label[]>> {
-  return {};
+export async function getMessageLabelsBatch(messageIds: string[]): Promise<Record<string, Label[]>> {
+  const res = await api.post<Record<string, Label[]>>("/messages/labels/batch", { messageIds });
+  return res.data;
 }
 
 export async function addMessageLabel(messageId: string, labelName: string): Promise<void> {
@@ -644,39 +667,42 @@ export async function deleteLabel(id: string): Promise<void> {
 
 // ─── Cloud Sync API ─────────────────────────────────────────────────────────
 
-export async function testWebdavConnection(_url: string, _username: string, _password: string): Promise<string> {
-  console.warn("[api] testWebdavConnection not implemented in web");
-  return "not_available";
+export async function testWebdavConnection(url: string, username: string, password: string): Promise<string> {
+  const res = await api.post<{ result: string }>("/cloud-sync/test", { url, username, password });
+  return res.data.result;
 }
 
-export async function backupToWebdav(_url: string, _username: string, _password: string): Promise<string> {
-  console.warn("[api] backupToWebdav not implemented in web");
-  return "not_available";
+export async function backupToWebdav(url: string, username: string, password: string): Promise<string> {
+  const res = await api.post<{ result: string }>("/cloud-sync/backup", { url, username, password });
+  return res.data.result;
 }
 
-export async function previewWebdavBackup(_url: string, _username: string, _password: string): Promise<BackupPreview> {
-  console.warn("[api] previewWebdavBackup not implemented in web");
-  return { version: 0, exported_at: 0, account_count: 0, rule_count: 0, kanban_card_count: 0, kanban_note_count: 0, has_translate_config: false, size_bytes: 0 };
+export async function previewWebdavBackup(url: string, username: string, password: string): Promise<BackupPreview> {
+  const res = await api.post<BackupPreview>("/cloud-sync/preview", { url, username, password });
+  return res.data;
 }
 
-export async function restoreFromWebdav(_url: string, _username: string, _password: string): Promise<string> {
-  console.warn("[api] restoreFromWebdav not implemented in web");
-  return "not_available";
+export async function restoreFromWebdav(url: string, username: string, password: string): Promise<string> {
+  const res = await api.post<{ result: string }>("/cloud-sync/restore", { url, username, password });
+  return res.data.result;
 }
 
 // ─── Contacts API ────────────────────────────────────────────────────────────
 
 export async function searchContacts(
-  _accountId: string,
-  _query: string,
-  _limit?: number,
+  accountId: string,
+  query: string,
+  limit?: number,
 ): Promise<KnownContact[]> {
-  return [];
+  const res = await api.get<KnownContact[]>("/contacts", {
+    params: { accountId, query, limit },
+  });
+  return res.data;
 }
 
 // ─── Drafts API ──────────────────────────────────────────────────────────────
 
-export async function saveDraft(_args: {
+export async function saveDraft(args: {
   accountId: string;
   to: string[];
   cc: string[];
@@ -688,12 +714,12 @@ export async function saveDraft(_args: {
   existingDraftId?: string;
   attachmentPaths?: string[];
 }): Promise<string> {
-  console.warn("[api] saveDraft not implemented in web");
-  return "";
+  const res = await api.post<{ id: string }>("/drafts", args);
+  return res.data.id;
 }
 
-export async function deleteDraft(_accountId: string, _draftId: string): Promise<void> {
-  console.warn("[api] deleteDraft not implemented in web");
+export async function deleteDraft(accountId: string, draftId: string): Promise<void> {
+  await api.delete(`/accounts/${accountId}/drafts/${draftId}`);
 }
 
 // ─── Folder Counts API ───────────────────────────────────────────────────────

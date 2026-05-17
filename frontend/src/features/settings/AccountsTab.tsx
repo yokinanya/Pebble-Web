@@ -6,12 +6,10 @@ import type { TFunction } from "i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   deleteAccount,
-  getOAuthAccountProxySetting,
   testAccountConnection,
   updateAccount,
-  updateOAuthAccountProxySetting,
 } from "@/lib/api";
-import type { Account, AccountProxyMode, ConnectionSecurity } from "@/lib/api";
+import type { Account, ConnectionSecurity } from "@/lib/api";
 import { useAccountsQuery, accountsQueryKey } from "@/hooks/queries";
 import { useMailStore } from "@/stores/mail.store";
 import { useUIStore, type RealtimeStatus } from "@/stores/ui.store";
@@ -404,9 +402,6 @@ function EditAccountModal({ account, initialColor, onClose, onSaved }: {
   const [smtpPort, setSmtpPort] = useState("");
   const [imapSecurity, setImapSecurity] = useState<ConnectionSecurity | "">("");
   const [smtpSecurity, setSmtpSecurity] = useState<ConnectionSecurity | "">("");
-  const [oauthProxyMode, setOauthProxyMode] = useState<AccountProxyMode>("inherit");
-  const [proxyHost, setProxyHost] = useState("");
-  const [proxyPort, setProxyPort] = useState("");
   const [signature, setSignatureValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -425,24 +420,6 @@ function EditAccountModal({ account, initialColor, onClose, onSaved }: {
       cancelled = true;
     };
   }, [account.id]);
-
-  useEffect(() => {
-    if (!isOAuth) return;
-    let cancelled = false;
-    getOAuthAccountProxySetting(account.id)
-      .then((setting) => {
-        if (cancelled) return;
-        setOauthProxyMode(setting.mode);
-        setProxyHost(setting.proxy?.host ?? "");
-        setProxyPort(setting.proxy?.port ? String(setting.proxy.port) : "");
-      })
-      .catch((err) => {
-        console.warn("Failed to load OAuth proxy:", err);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [account.id, isOAuth]);
 
   useEffect(() => {
     const previousFocus =
@@ -501,20 +478,6 @@ function EditAccountModal({ account, initialColor, onClose, onSaved }: {
           undefined,
           accountColor,
         );
-        const trimmedProxyHost = proxyHost.trim();
-        const trimmedProxyPort = proxyPort.trim();
-        const hasCustomProxyDraft = !!trimmedProxyHost || !!trimmedProxyPort;
-        const nextProxyMode: AccountProxyMode = hasCustomProxyDraft
-          ? "custom"
-          : oauthProxyMode === "disabled"
-            ? "disabled"
-            : "inherit";
-        await updateOAuthAccountProxySetting(
-          account.id,
-          nextProxyMode,
-          nextProxyMode === "custom" ? trimmedProxyHost || undefined : undefined,
-          nextProxyMode === "custom" && trimmedProxyPort ? parseInt(trimmedProxyPort, 10) : undefined,
-        );
       } else {
         await updateAccount(
           account.id,
@@ -527,8 +490,8 @@ function EditAccountModal({ account, initialColor, onClose, onSaved }: {
           smtpPort ? parseInt(smtpPort, 10) : undefined,
           imapSecurity || undefined,
           smtpSecurity || undefined,
-          proxyHost.trim() || undefined,
-          proxyPort ? parseInt(proxyPort, 10) : undefined,
+          undefined,
+          undefined,
           accountColor,
         );
       }
@@ -546,19 +509,6 @@ function EditAccountModal({ account, initialColor, onClose, onSaved }: {
     flexDirection: "column",
   };
   const colorInputValue = /^#[0-9a-fA-F]{6}$/.test(accountColor) ? accountColor : initialColor;
-  const proxyFields = (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "12px" }}>
-      <div style={fieldStyle}>
-        <label style={labelStyle}>{t("accountSetup.proxyHost", "SOCKS5 Proxy")} <span style={{ color: "var(--color-text-secondary)", fontWeight: 400 }}>({t("settings.optional", "optional")})</span></label>
-        <input aria-label={t("accountSetup.proxyHost", "SOCKS5 Proxy")} style={inputStyle} type="text" value={proxyHost} onChange={(e) => setProxyHost(e.target.value)} placeholder="127.0.0.1" />
-      </div>
-      <div style={fieldStyle}>
-        <label style={labelStyle}>{t("accountSetup.proxyPort", "Port")}</label>
-        <input aria-label={t("accountSetup.proxyPort", "Port")} style={{ ...inputStyle, width: "80px" }} type="number" value={proxyPort} onChange={(e) => setProxyPort(e.target.value)} placeholder="7890" />
-      </div>
-    </div>
-  );
-
   return (
     <div
       ref={dialogRef}
@@ -699,7 +649,7 @@ function EditAccountModal({ account, initialColor, onClose, onSaved }: {
               >
                 {t(
                   "settings.oauthAccountNote",
-                  "This account uses OAuth. Provider sign-in, password, and IMAP/SMTP settings are managed by the provider. Leave the proxy blank to inherit the global SOCKS5 proxy."
+                  "This account uses OAuth. Provider sign-in, password, and IMAP/SMTP settings are managed by the provider."
                 )}
               </div>
             ) : (
@@ -749,8 +699,6 @@ function EditAccountModal({ account, initialColor, onClose, onSaved }: {
 
               </>
             )}
-
-            {proxyFields}
 
             {/* Signature */}
             <div style={fieldStyle}>
