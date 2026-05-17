@@ -66,6 +66,7 @@ export default function Sidebar() {
 
   const showUnread = useUIStore((s) => s.showFolderUnreadCount);
   const { data: accounts = EMPTY_ACCOUNTS } = useAccountsQuery();
+  const hasAccounts = accounts.length > 0;
   const allAccountsMode = accounts.length > 1 && !activeAccountId;
   const folderAccountIds = useMemo(
     () => activeAccountId ? [activeAccountId] : accounts.map((account) => account.id),
@@ -149,6 +150,10 @@ export default function Sidebar() {
     setActiveFolderId(folderId);
   }
 
+  async function handleDefaultFolderClick() {
+    await safeSetActiveView(hasAccounts ? "inbox" : "settings");
+  }
+
   const buttonBase: React.CSSProperties = {
     display: "flex",
     alignItems: "center",
@@ -176,6 +181,9 @@ export default function Sidebar() {
         flexDirection: "column",
         height: "100%",
         overflow: "hidden",
+        position: "relative",
+        zIndex: 2,
+        pointerEvents: "auto",
       }}
     >
       {/* Search button */}
@@ -186,7 +194,7 @@ export default function Sidebar() {
           isActive={activeView === "search"}
           collapsed={sidebarCollapsed}
           style={buttonBase}
-          onClick={() => safeSetActiveView("search")}
+          onClick={() => void safeSetActiveView("search")}
         />
       </nav>
 
@@ -262,7 +270,7 @@ export default function Sidebar() {
                     isActive={activeView === "starred"}
                     collapsed={sidebarCollapsed}
                     style={buttonBase}
-                    onClick={() => safeSetActiveView("starred")}
+                    onClick={() => void safeSetActiveView("starred")}
                   />
                 );
               }
@@ -276,7 +284,7 @@ export default function Sidebar() {
                   isActive={isActive}
                   collapsed={sidebarCollapsed}
                   style={buttonBase}
-                  onClick={() => handleFolderClick(folder.id)}
+                  onClick={() => void handleFolderClick(folder.id)}
                 />
               );
               return items;
@@ -292,7 +300,7 @@ export default function Sidebar() {
                     isActive={activeView === "starred"}
                     collapsed={sidebarCollapsed}
                     style={buttonBase}
-                    onClick={() => safeSetActiveView("starred")}
+                    onClick={() => void safeSetActiveView("starred")}
                   />
                 );
               }
@@ -304,7 +312,7 @@ export default function Sidebar() {
                   isActive={index === 0 && activeView === "inbox"}
                   collapsed={sidebarCollapsed}
                   style={buttonBase}
-                  onClick={() => safeSetActiveView("inbox")}
+                  onClick={() => void handleDefaultFolderClick()}
                 />
               );
               return items;
@@ -336,7 +344,7 @@ export default function Sidebar() {
           isActive={activeView === "snoozed"}
           collapsed={sidebarCollapsed}
           style={buttonBase}
-          onClick={() => safeSetActiveView("snoozed")}
+          onClick={() => void safeSetActiveView("snoozed")}
         />
         <SidebarButton
           icon={<LayoutGrid size={16} />}
@@ -344,7 +352,7 @@ export default function Sidebar() {
           isActive={activeView === "kanban"}
           collapsed={sidebarCollapsed}
           style={buttonBase}
-          onClick={() => safeSetActiveView("kanban")}
+          onClick={() => void safeSetActiveView("kanban")}
         />
         <SidebarButton
           icon={<Settings size={16} />}
@@ -352,7 +360,7 @@ export default function Sidebar() {
           isActive={activeView === "settings"}
           collapsed={sidebarCollapsed}
           style={buttonBase}
-          onClick={() => safeSetActiveView("settings")}
+          onClick={() => void safeSetActiveView("settings")}
         />
       </nav>
     </aside>
