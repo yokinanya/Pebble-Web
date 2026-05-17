@@ -10,7 +10,7 @@ interface ShadowDomEmailProps {
 function openMailtoUrl(url: string) {
   try {
     const parsed = new URL(url);
-    const to = parsed.pathname ? [parsed.pathname] : [];
+    const to = parsed.pathname ? parsed.pathname.split(",").filter(Boolean) : [];
     const cc = parsed.searchParams.get("cc")?.split(",").filter(Boolean) ?? [];
     const bcc = parsed.searchParams.get("bcc")?.split(",").filter(Boolean) ?? [];
     const subject = parsed.searchParams.get("subject") ?? undefined;
