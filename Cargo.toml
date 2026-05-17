@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    ".",
     "crates/pebble-core",
     "crates/pebble-store",
     "crates/pebble-mail",
@@ -37,3 +38,24 @@ tower = "0.5"
 tower-http = { version = "0.6", features = ["fs", "cors", "trace"] }
 jsonwebtoken = "9"
 argon2 = "0.5"
+
+[package]
+name = "pebble-web"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+jsonwebtoken = { workspace = true }
+argon2 = { workspace = true }
+pebble-core = { path = "crates/pebble-core" }
+pebble-store = { path = "crates/pebble-store" }
+pebble-search = { path = "crates/pebble-search" }
+pebble-crypto = { path = "crates/pebble-crypto" }

@@ -1,0 +1,61 @@
+use std::path::PathBuf;
+
+#[derive(Debug, Clone)]
+pub struct Config {
+    pub port: u16,
+    pub data_dir: PathBuf,
+    pub password_hash: String,
+    pub jwt_secret: String,
+    pub sync_interval_secs: u64,
+}
+
+impl Config {
+    pub fn from_env() -> Result<Self, String> {
+        let password = std::env::var("PEBBLE_PASSWORD")
+            .map_err(|_| "PEBBLE_PASSWORD env var is required".to_string())?;
+
+        let jwt_secret = std::env::var("PEBBLE_JWT_SECRET")
+            .map_err(|_| "PEBBLE_JWT_SECRET env var is required".to_string())?;
+
+        let port = std::env::var("PEBBLE_PORT")
+            .unwrap_or_else(|_| "8080".to_string())
+            .parse::<u16>()
+            .map_err(|e| format!("Invalid PEBBLE_PORT: {e}"))?;
+
+        let data_dir = PathBuf::from(
+            std::env::var("PEBBLE_DATA_DIR").unwrap_or_else(|_| "/data".to_string()),
+        );
+
+        let sync_interval_secs = std::env::var("PEBBLE_SYNC_INTERVAL")
+            .unwrap_or_else(|_| "300".to_string())
+            .parse::<u64>()
+            .map_err(|e| format!("Invalid PEBBLE_SYNC_INTERVAL: {e}"))?;
+
+        let password_hash = crate::auth::hash_password(&password)
+            .map_err(|e| format!("Failed to hash password: {e}"))?;
+
+        Ok(Self {
+            port,
+            data_dir,
+            password_hash,
+            jwt_secret,
+            sync_interval_secs,
+        })
+    }
+
+    pub fn db_path(&self) -> PathBuf {
+        self.data_dir.join("pebble.db")
+    }
+
+    pub fn index_dir(&self) -> PathBuf {
+        self.data_dir.join("index")
+    }
+
+    pub fn attachments_dir(&self) -> PathBuf {
+        self.data_dir.join("attachments")
+    }
+
+    pub fn key_file_path(&self) -> PathBuf {
+        self.data_dir.join("encryption.key")
+    }
+}
