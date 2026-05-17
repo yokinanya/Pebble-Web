@@ -1,295 +1,178 @@
 # Pebble Web
 
-A self-hosted web-based email client with Docker deployment support. Derived from the [Pebble](https://github.com/QingJ01/Pebble) desktop email client.
+中文 | [English](./README_EN.md)
 
-## Features
+Pebble Web 是一个可自托管的 Web 邮件客户端，基于桌面端 [Pebble](https://github.com/QingJ01/Pebble) 改造而来，默认面向中文用户编写文档，支持 Docker 部署和浏览器访问。
 
-- **Email Management** — Inbox, folders, threads, starred messages, archive, trash
-- **Compose** — Rich text / Markdown / HTML editor, attachments, reply/forward, templates
-- **IMAP/SMTP** — Gmail, Outlook, and generic IMAP providers
-- **Full-Text Search** — Powered by Tantivy, with advanced filters (from, to, date, attachment)
-- **Background Sync** — Automatic IMAP sync with configurable interval
-- **Real-Time Notifications** — WebSocket push on new mail and sync events
-- **Batch Operations** — Multi-select archive, delete, mark read/unread, star
-- **Translation** — Integrated translation (DeepLX, DeepL, Generic API, LLM)
-- **Labels** — Custom label creation and per-message tagging
-- **Attachments** — Download and inline preview, web-based upload staging
-- **Privacy** — Configurable remote image blocking and tracker detection
-- **Dark Mode** — System-aware theme with manual override
-- **Bilingual UI** — English / 中文
-- **Docker Deployment** — Single-command deployment with multi-stage build
+## 主要功能
 
-## Quick Start
+- 多账户邮件管理：收件箱、文件夹、会话、星标、归档、回收站
+- 邮件撰写：富文本、Markdown、HTML、附件、回复、转发、草稿
+- 邮件同步：支持 IMAP/SMTP，后台自动同步，可配置同步间隔
+- 全文搜索：基于 Tantivy，支持常用邮件检索条件
+- 批量操作：归档、删除、标记已读/未读、星标
+- 标签与看板：自定义标签、邮件任务看板、上下文备注
+- 稍后处理：邮件延后提醒和待处理列表
+- 邮件翻译：支持 DeepLX、DeepL、通用翻译服务和 LLM 翻译配置
+- 隐私保护：默认阻止远程图片，可维护可信发件人
+- 附件管理：上传暂存、下载、内联附件展示
+- 云端配置备份：通过 WebDAV 备份和恢复设置
+- 双语界面：中文和 English
 
-### Docker Compose (Recommended)
+## 快速开始
+
+### Docker Compose
+
+推荐使用 Docker Compose 部署：
 
 ```bash
 git clone https://github.com/QingJ01/Pebble-Web.git
 cd Pebble-Web
 cp .env.example .env
-# Edit .env: set PEBBLE_PASSWORD and PEBBLE_JWT_SECRET
+```
+
+编辑 `.env`，至少设置：
+
+```env
+PEBBLE_PASSWORD=请替换为登录密码
+PEBBLE_JWT_SECRET=请替换为至少32位的随机字符串
+```
+
+启动服务：
+
+```bash
 docker-compose up -d
 ```
 
-Access at http://localhost:8080
+浏览器访问：
 
-### Manual Build
+```text
+http://localhost:8080
+```
 
-**Prerequisites:** Rust 1.80+, Node.js 20+
+### 手动构建
+
+环境要求：
+
+- Rust 1.80+
+- Node.js 20+
+- npm
 
 ```bash
-# Build frontend
-cd frontend && npm install && npm run build && cd ..
+cd frontend
+npm install
+npm run build
+cd ..
 
-# Build backend
 cargo build --release
+```
 
-# Run
+运行前设置环境变量：
+
+```bash
 export PEBBLE_PASSWORD=your-password
 export PEBBLE_JWT_SECRET=your-random-secret-at-least-32-chars
 export PEBBLE_DATA_DIR=./data
 export PEBBLE_STATIC_DIR=./frontend/dist
+
 ./target/release/pebble-web
 ```
 
-### Development
+Windows PowerShell 示例：
+
+```powershell
+$env:PEBBLE_PASSWORD="your-password"
+$env:PEBBLE_JWT_SECRET="your-random-secret-at-least-32-chars"
+$env:PEBBLE_DATA_DIR="./data"
+$env:PEBBLE_STATIC_DIR="./frontend/dist"
+
+.\target\release\pebble-web.exe
+```
+
+## 本地开发
+
+后端：
 
 ```bash
-# Terminal 1: Backend (auto-reload with cargo-watch)
 cargo run
-
-# Terminal 2: Frontend dev server (proxies API to backend)
-cd frontend && npm run dev
 ```
 
-The Vite dev server proxies `/api` requests to the backend at `http://localhost:8080`.
+前端：
 
-## Environment Variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `PEBBLE_PASSWORD` | Yes | — | Login password |
-| `PEBBLE_JWT_SECRET` | Yes | — | JWT signing secret (min 32 chars) |
-| `PEBBLE_PORT` | No | `8080` | Server port |
-| `PEBBLE_DATA_DIR` | No | `/data` | Data directory path |
-| `PEBBLE_STATIC_DIR` | No | `./frontend/dist` | Frontend static files path |
-| `PEBBLE_SYNC_INTERVAL` | No | `300` | IMAP sync interval in seconds |
-| `PEBBLE_ENCRYPTION_KEY` | No | auto-generated | Hex-encoded 32-byte key for credential encryption |
-
-## Architecture
-
-```
-┌────────────────────────────────────────────────┐
-│                  Browser (SPA)                 │
-│  React 19 · Zustand · React Query · TipTap    │
-│  Tailwind CSS · i18next · Vite                 │
-└──────────────┬──────────────┬──────────────────┘
-               │ HTTP REST    │ WebSocket
-┌──────────────▼──────────────▼──────────────────┐
-│              Axum HTTP Server                  │
-│  ┌──────────┐ ┌───────────┐ ┌───────────────┐ │
-│  │ REST API │ │ WebSocket │ │ Static Files  │ │
-│  │ (JWT)    │ │ (realtime)│ │ (SPA fallback)│ │
-│  └────┬─────┘ └─────┬─────┘ └───────────────┘ │
-│       │              │                          │
-│  ┌────▼──────────────▼──────────────────────┐  │
-│  │         Background Sync Workers          │  │
-│  │    (per-account IMAP IDLE / polling)     │  │
-│  └──────────────────────────────────────────┘  │
-│                                                │
-│  ┌─────────────┐ ┌─────────────┐ ┌──────────┐ │
-│  │pebble-store │ │pebble-search│ │pebble-   │ │
-│  │  (SQLite)   │ │  (Tantivy)  │ │ crypto   │ │
-│  └─────────────┘ └─────────────┘ │(AES-256) │ │
-│  ┌─────────────┐ ┌─────────────┐ └──────────┘ │
-│  │ pebble-mail │ │pebble-      │               │
-│  │(IMAP/SMTP)  │ │ translate   │               │
-│  └─────────────┘ └─────────────┘               │
-└────────────────────────────────────────────────┘
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-### Tech Stack
+开发服务器会把前端请求代理到后端服务。
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | React 19, TypeScript, Vite, Tailwind CSS 4 |
-| State Management | Zustand 5, TanStack React Query 5 |
-| Rich Text Editor | TipTap 3 (with Markdown support) |
-| Backend | Rust, Axum 0.8, Tokio |
-| Database | SQLite (rusqlite) |
-| Search | Tantivy 0.22 |
-| Email | async-imap, Lettre (SMTP) |
-| Encryption | AES-256-GCM (aes-gcm) |
-| Auth | Argon2 password hashing, JWT |
-| Translation | DeepLX / DeepL / Generic API / LLM |
-| Deployment | Docker multi-stage build, Alpine Linux |
+## 配置项
 
-## API Reference
+| 变量 | 必填 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `PEBBLE_PASSWORD` | 是 | 无 | Web 登录密码 |
+| `PEBBLE_JWT_SECRET` | 是 | 无 | 登录令牌签名密钥，至少 32 字符 |
+| `PEBBLE_PORT` | 否 | `8080` | 服务端口 |
+| `PEBBLE_DATA_DIR` | 否 | `/data` | 数据目录 |
+| `PEBBLE_STATIC_DIR` | 否 | `./frontend/dist` | 前端静态文件目录 |
+| `PEBBLE_SYNC_INTERVAL` | 否 | `300` | 邮件同步间隔，单位秒 |
+| `PEBBLE_ENCRYPTION_KEY` | 否 | 自动生成 | 32 字节 Hex 编码加密密钥 |
 
-All endpoints except `/health`, `/auth/login`, and `/ws` require a JWT token in the `Authorization: Bearer <token>` header.
+安全建议：
 
-### Auth
+- 不要使用 `.env.example` 中的占位密码和密钥。
+- 生产环境请使用 HTTPS 反向代理。
+- 请定期备份 `PEBBLE_DATA_DIR`。
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/auth/login` | Login, returns JWT token |
-| GET | `/api/v1/health` | Health check |
+## 数据目录
 
-### Accounts
+默认数据目录结构：
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/accounts` | List all email accounts |
-| POST | `/api/v1/accounts` | Add email account (IMAP/SMTP) |
-| PUT | `/api/v1/accounts/:id` | Update account settings |
-| DELETE | `/api/v1/accounts/:id` | Delete account and all data |
-| POST | `/api/v1/accounts/:id/test-connection` | Test IMAP connection (existing account) |
-| POST | `/api/v1/test-imap-connection` | Test IMAP connection (raw credentials) |
-
-### Folders
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/accounts/:id/folders` | List folders for account |
-| GET | `/api/v1/accounts/:id/folder-unread-counts` | Get unread counts per folder |
-
-### Messages
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/folders/:id/messages` | List messages in folder (paginated) |
-| GET | `/api/v1/messages/:id` | Get message metadata |
-| POST | `/api/v1/messages/:id/with-html` | Get message with rendered HTML body |
-| POST | `/api/v1/messages/:id/render` | Re-render HTML with privacy settings |
-| PUT | `/api/v1/messages/:id/flags` | Update read/starred flags |
-| POST | `/api/v1/messages/:id/move` | Move message to folder |
-| POST | `/api/v1/messages/:id/archive` | Archive message |
-| POST | `/api/v1/messages/:id/restore` | Restore from trash |
-| DELETE | `/api/v1/messages/:id` | Soft-delete message |
-| GET | `/api/v1/accounts/:id/starred` | List starred messages |
-| POST | `/api/v1/accounts/:id/empty-trash` | Empty trash folder |
-
-### Batch Operations
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/messages/batch` | Get multiple messages by IDs |
-| POST | `/api/v1/messages/batch/archive` | Batch archive |
-| POST | `/api/v1/messages/batch/delete` | Batch delete |
-| POST | `/api/v1/messages/batch/mark-read` | Batch mark read/unread |
-| POST | `/api/v1/messages/batch/star` | Batch star/unstar |
-
-### Threads
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/folders/:id/threads` | List threads in folder |
-| GET | `/api/v1/threads/:id/messages` | Get all messages in thread |
-
-### Search
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/search` | Full-text search with optional filters |
-
-### Attachments
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/messages/:id/attachments` | List message attachments |
-| GET | `/api/v1/attachments/:id/download` | Download attachment file |
-
-### Compose
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/compose` | Send email via SMTP |
-| POST | `/api/v1/compose/attachment` | Stage attachment (base64 upload) |
-
-### Labels
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/labels` | List all labels |
-| POST | `/api/v1/labels` | Create label |
-| DELETE | `/api/v1/labels/:id` | Delete label |
-| POST | `/api/v1/messages/:id/labels` | Add label to message |
-| DELETE | `/api/v1/messages/:id/labels/:label_id` | Remove label from message |
-
-### Translation
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/translate` | Translate text |
-| GET | `/api/v1/translate/config` | Get translation config |
-| POST | `/api/v1/translate/config` | Save translation config |
-| POST | `/api/v1/translate/test` | Test translation provider |
-
-### Sync
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/sync/trigger` | Trigger manual IMAP sync |
-| GET | `/api/v1/pending-ops/summary` | Pending operations summary |
-| GET | `/api/v1/pending-ops` | List pending operations |
-
-### WebSocket
-
-| Protocol | Endpoint | Description |
-|----------|----------|-------------|
-| WS | `/api/v1/ws` | Real-time notifications (first message = JWT token) |
-
-Events: `sync_complete`, `new_mail`, `authenticated`, `error`
-
-## Data Storage
-
-All data is stored in the configured data directory (`PEBBLE_DATA_DIR`):
-
-```
+```text
 data/
-├── pebble.db          # SQLite database (accounts, messages, folders, labels)
-├── index/             # Tantivy full-text search index
-├── attachments/       # Downloaded and staged attachment files
-│   └── staging/       # Temporary upload staging area
-└── encryption.key     # Auto-generated AES-256 encryption key
+├─ pebble.db
+├─ index/
+├─ attachments/
+│  └─ staging/
+└─ encryption.key
 ```
 
-## Project Structure
+其中：
 
-```
+- `pebble.db` 保存账户、邮件元数据、文件夹、标签、规则等信息。
+- `index/` 保存全文搜索索引。
+- `attachments/` 保存附件和上传暂存文件。
+- `encryption.key` 用于本地敏感数据加密，丢失后无法解密已有凭据。
+
+## 技术栈
+
+| 模块 | 技术 |
+| --- | --- |
+| 前端 | React 19、TypeScript、Vite、Tailwind CSS、Zustand、TanStack Query |
+| 编辑器 | TipTap、Markdown 支持 |
+| 后端 | Rust、Axum、Tokio |
+| 存储 | SQLite、rusqlite |
+| 搜索 | Tantivy |
+| 邮件 | IMAP、SMTP |
+| 加密 | AES-256-GCM、Argon2、JWT |
+| 部署 | Docker、Docker Compose |
+
+## 项目结构
+
+```text
 Pebble-Web/
-├── src/                    # Rust backend
-│   ├── main.rs             # Entry point, server startup
-│   ├── config.rs           # Environment config validation
-│   ├── auth.rs             # Argon2 hashing, JWT, auth middleware
-│   ├── state.rs            # Shared application state
-│   ├── error.rs            # API error types
-│   ├── credentials.rs      # Credential encryption/decryption
-│   ├── sync.rs             # Background IMAP sync manager
-│   ├── ws.rs               # WebSocket handler and broadcast
-│   └── routes/             # API route handlers
-├── crates/                 # Workspace crates
-│   ├── pebble-core/        # Shared types and traits
-│   ├── pebble-store/       # SQLite storage layer
-│   ├── pebble-mail/        # IMAP/SMTP implementation
-│   ├── pebble-search/      # Tantivy search engine
-│   ├── pebble-crypto/      # AES-256-GCM encryption
-│   ├── pebble-translate/   # Translation providers
-│   └── pebble-oauth/       # OAuth helpers (desktop only)
-├── frontend/               # React SPA
-│   ├── src/
-│   │   ├── app/            # Layout, hooks, routing
-│   │   ├── components/     # Shared UI components
-│   │   ├── features/       # Feature modules (inbox, compose, settings, ...)
-│   │   ├── hooks/          # React Query hooks, mutations
-│   │   ├── stores/         # Zustand state stores
-│   │   └── lib/            # API client, utilities, types
-│   └── vite.config.ts
-├── Dockerfile              # Multi-stage Docker build
-├── docker-compose.yml
-└── .env.example
+├─ src/                 # Rust Web 后端
+├─ crates/              # Rust workspace 子包
+├─ frontend/            # React 前端
+├─ Dockerfile
+├─ docker-compose.yml
+├─ .env.example
+├─ README.md
+├─ README_EN.md
+└─ LICENSE
 ```
 
-## License
+## 许可协议
 
-MIT
+本项目基于 [GNU Affero General Public License v3.0](./LICENSE) 开源，SPDX 标识为 `AGPL-3.0-only`。
