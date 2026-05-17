@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
+    pub sub: String,
     pub exp: usize,
     pub iat: usize,
 }
@@ -43,6 +44,7 @@ pub fn create_token(secret: &str, expiry_days: u64) -> Result<String, String> {
         .as_secs() as usize;
 
     let claims = Claims {
+        sub: "admin".to_string(),
         iat: now,
         exp: now + (expiry_days * 24 * 60 * 60) as usize,
     };

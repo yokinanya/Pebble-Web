@@ -17,6 +17,14 @@ impl Config {
         let jwt_secret = std::env::var("PEBBLE_JWT_SECRET")
             .map_err(|_| "PEBBLE_JWT_SECRET env var is required".to_string())?;
 
+        if jwt_secret == "change-this-to-a-random-string" || jwt_secret == "generate-a-random-string-here" {
+            return Err("PEBBLE_JWT_SECRET must be changed from the default value".to_string());
+        }
+
+        if password == "changeme" {
+            return Err("PEBBLE_PASSWORD must be changed from the default value".to_string());
+        }
+
         let port = std::env::var("PEBBLE_PORT")
             .unwrap_or_else(|_| "8080".to_string())
             .parse::<u16>()
