@@ -1,0 +1,10 @@
+[package]
+name = "pebble-search"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pebble-core = { path = "../pebble-core" }
+thiserror = { workspace = true }
+tantivy = { workspace = true }
+tracing = { workspace = true }

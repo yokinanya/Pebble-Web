@@ -1,0 +1,40 @@
+[workspace]
+members = [
+    "crates/pebble-core",
+    "crates/pebble-store",
+    "crates/pebble-mail",
+    "crates/pebble-search",
+    "crates/pebble-translate",
+    "crates/pebble-crypto",
+    "crates/pebble-oauth",
+]
+resolver = "2"
+
+[workspace.dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+uuid = { version = "1", features = ["v4", "serde"] }
+tracing = "0.1"
+tokio = { version = "1", features = ["full"] }
+rusqlite = { version = "0.39", features = ["bundled"] }
+async-imap = { version = "0.10", default-features = false, features = ["runtime-tokio"] }
+tokio-rustls = "0.26"
+rustls = { version = "0.23", features = ["aws_lc_rs", "tls12"] }
+webpki-roots = "0.26"
+mail-parser = "0.9"
+tantivy = "0.22"
+ammonia = "4"
+lol_html = "1"
+lettre = { version = "0.11", default-features = false, features = ["tokio1-rustls-tls", "smtp-transport", "builder"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "socks"] }
+tokio-socks = "0.5"
+aes-gcm = "0.10"
+rand = "0.8"
+semver = "1"
+axum = "0.8"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["fs", "cors", "trace"] }
+jsonwebtoken = "9"
+argon2 = "0.5"
+keyring = { version = "3", features = ["apple-native", "windows-native", "linux-native-sync-persistent", "crypto-rust"] }
