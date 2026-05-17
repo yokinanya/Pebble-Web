@@ -6,6 +6,7 @@ pub mod folders;
 pub mod health;
 pub mod messages;
 pub mod search;
+pub mod sync;
 pub mod threads;
 
 use crate::state::AppStateRef;
@@ -46,6 +47,8 @@ pub fn build_router(state: AppStateRef, static_dir: &str) -> Router {
         .route("/api/v1/attachments/{attachment_id}/download", get(attachments::download_attachment))
         // Compose
         .route("/api/v1/compose", post(compose::send_email))
+        // Sync
+        .route("/api/v1/sync/trigger", post(sync::trigger_sync))
         .layer(middleware::from_fn(move |req, next| {
             crate::auth::auth_middleware(jwt_secret.clone(), req, next)
         }));

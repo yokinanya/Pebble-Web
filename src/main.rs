@@ -4,6 +4,7 @@ mod credentials;
 mod error;
 mod routes;
 mod state;
+mod sync;
 
 use crate::config::Config;
 use crate::state::{AppState, AppStateRef};
@@ -26,6 +27,12 @@ async fn main() {
 
     let state = AppState::init(config).expect("Failed to initialize app state");
     let state: AppStateRef = Arc::new(state);
+
+    // Spawn background sync for all configured accounts.
+    let sync_manager = state.sync_manager.clone();
+    tokio::spawn(async move {
+        sync_manager.start_all().await;
+    });
 
     let static_dir = std::env::var("PEBBLE_STATIC_DIR")
         .unwrap_or_else(|_| "/usr/local/share/pebble-web/static".to_string());

@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::sync::SyncManager;
 use pebble_crypto::CryptoService;
 use pebble_search::TantivySearch;
 use pebble_store::Store;
@@ -13,6 +14,7 @@ pub struct AppState {
     pub search: Arc<TantivySearch>,
     pub crypto: Arc<CryptoService>,
     pub attachments_dir: PathBuf,
+    pub sync_manager: Arc<SyncManager>,
 }
 
 impl AppState {
@@ -34,12 +36,23 @@ impl AppState {
 
         let attachments_dir = config.attachments_dir();
 
+        let store = Arc::new(store);
+        let crypto = Arc::new(crypto);
+
+        let sync_manager = Arc::new(SyncManager::new(
+            store.clone(),
+            crypto.clone(),
+            attachments_dir.clone(),
+            config.sync_interval_secs,
+        ));
+
         Ok(Self {
             config,
-            store: Arc::new(store),
+            store,
             search: Arc::new(search),
-            crypto: Arc::new(crypto),
+            crypto,
             attachments_dir,
+            sync_manager,
         })
     }
 }
