@@ -189,6 +189,10 @@ Pebble-Web/
 └─ LICENSE
 ```
 
+## 友情链接
+
+- [LINUX DO](https://linux.do/) — 真诚、友善、团结、专业，共建你我引以为荣的社区
+
 ## 许可协议
 
 本项目基于 [GNU Affero General Public License v3.0](./LICENSE) 开源，SPDX 标识为 `AGPL-3.0-only`。
